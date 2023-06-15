@@ -2,8 +2,6 @@ from fastapi import APIRouter,BackgroundTasks
 from src.utils.hubspotClient import hubspotClient
 from hubspot.crm.contacts import SimplePublicObjectInput
 from hubspot.crm.contacts.exceptions import ApiException
-from src.database.db import conn
-from src.models.contactModel import contacts
 from src.schemas.contactSchema import Contact
 from src.schemas.taskSchema import Task
 from decouple import config
@@ -131,9 +129,6 @@ async def sync_tasks(background_tasks: BackgroundTasks):
         background_tasks.add_task(update_contact_to_added, contact['hs_object_id'])
     
     return {"message": "Synchronization process started"}
-
-    
-
 
         
 
