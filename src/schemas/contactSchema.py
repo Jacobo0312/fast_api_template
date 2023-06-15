@@ -9,3 +9,4 @@ class Contact(BaseModel):
     email: str
     phone: str
     website: str
+    estado_clickup: Optional[str]

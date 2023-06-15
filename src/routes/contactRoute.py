@@ -5,10 +5,9 @@ from hubspot.crm.contacts.exceptions import ApiException
 from src.database.db import conn
 from src.models.contactModel import contacts
 from src.schemas.contactSchema import Contact
+from src.schemas.taskSchema import Task
 from decouple import config
 import requests
-import json
-
 
 contactRouter = APIRouter()
 
@@ -23,10 +22,11 @@ async def create_contact(contact:Contact):
                 "lastname": contact.lastname,
                 "phone": contact.phone,
                 "website": contact.website,
+                "estado_clickup": "pending"
             }
         )
         response = hubspotClient.crm.contacts.basic_api.create(contact)
-        return response.body
+        return response.properties
     except ApiException as e:
         print("Exception when calling basic_api->create: %s\n" % e)
         return "Error" + str(e)
@@ -35,8 +35,23 @@ async def create_contact(contact:Contact):
 @contactRouter.get("/contacts/{id}")
 async def get_contact(id:str):
     try:
-        contact_fetched = hubspotClient.crm.contacts.basic_api.get_by_id(id)
+        contact_fetched = hubspotClient.crm.contacts.basic_api.get_by_id(contact_id=id,properties=['estado_clickup'])
         return contact_fetched.properties
+    except ApiException as e:
+        return ("Exception when requesting contact by id: %s\n" % e)
+    
+
+#Update contact by id
+@contactRouter.put("/contacts/{id}")
+async def update_contact_to_added(id:str):
+    try:
+        contact_to_update = SimplePublicObjectInput(
+            properties={
+                "estado_clickup": "added"
+            }
+        )
+        contact_updated = hubspotClient.crm.contacts.basic_api.update(id,contact_to_update)
+        return contact_updated.properties
     except ApiException as e:
         return ("Exception when requesting contact by id: %s\n" % e)
     
@@ -45,16 +60,14 @@ async def get_contact(id:str):
 @contactRouter.get("/contacts")
 async def get_all_contacts():
     try:
-        all_contacts = hubspotClient.crm.contacts.get_all()
+        all_contacts = hubspotClient.crm.contacts.get_all(properties=['firstname','lastname','email','phone','website','estado_clickup'])
         contact_list = []
         for contact in all_contacts:
+            print(contact)
             contact_list.append(contact.properties)
         return contact_list   
     except ApiException as e:
         return ("Exception when requesting all contacts: %s\n" % e)
-
-
-import requests
 
 
 @contactRouter.get("/tasks")
@@ -70,20 +83,14 @@ async def get_all_tasks():
     return data
 
 @contactRouter.post("/tasks")
-async def create_task():
+async def create_task(task:Task):
     list_id = config('CLICKUP_LIST_ID')
     url = "https://api.clickup.com/api/v2/list/" + list_id + "/task"
 
     payload = {
-    "name": "New Task Name",
-    "description": "New Task Description",
-    "assignees": [
-        183
-    ],
-    "tags": [
-        "tag name 1"
-    ],
-    "status": "Open",
+    "name": task.name,
+    "description": task.description,
+    "status": "to do",
     "priority": 3,
     "due_date": 1508369194377,
     "due_date_time": False,
@@ -93,13 +100,6 @@ async def create_task():
     "notify_all": True,
     "parent": None,
     "links_to": None,
-    "check_required_custom_fields": True,
-    "custom_fields": [
-        {
-        "id": "0a52c486-5f05-403b-b4fd-c512ff05131c",
-        "value": "This is a string of text added to a Custom Field."
-        }
-    ]
     }
 
     headers = {
@@ -107,11 +107,12 @@ async def create_task():
     "Authorization": config('CLICKUP_TOKEN')
     }
 
-    response = requests.post(url, json=payload, headers=headers, params=query)
+    response = requests.post(url, json=payload, headers=headers)
 
     data = response.json()
-    print(data)
     return data
+
+
     
 
 
