@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter,BackgroundTasks
 from src.utils.hubspotClient import hubspotClient
 from hubspot.crm.contacts import SimplePublicObjectInput
 from hubspot.crm.contacts.exceptions import ApiException
@@ -111,6 +111,33 @@ async def create_task(task:Task):
 
     data = response.json()
     return data
+
+
+#Sync tasks using background tasks
+@contactRouter.get("/sync-tasks")
+async def sync_tasks(background_tasks: BackgroundTasks):
+    all_contacts = hubspotClient.crm.contacts.get_all(properties=['firstname','lastname','email','phone','website','estado_clickup'])
+    pending_contacts = []
+    for contact in all_contacts:
+        if contact.properties['estado_clickup'] == 'pending':
+            pending_contacts.append(contact.properties)
+    
+    for contact in pending_contacts:
+        task = Task(
+            name = contact['firstname'] + ' ' + contact['lastname'],
+            description = contact['email'] + ' ' + contact['phone'] + ' ' + contact['website']
+        )
+        background_tasks.add_task(create_task, task)
+        background_tasks.add_task(update_contact_to_added, contact['hs_object_id'])
+    
+    return {"message": "Synchronization process started"}
+
+    
+
+
+        
+
+        
 
 
     
