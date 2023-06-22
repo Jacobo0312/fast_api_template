@@ -1,4 +1,4 @@
-# TEST BACK DEVELOPER
+# FASTAPI TEMPLATE
 
 ## Requisitos
 
@@ -6,7 +6,7 @@
 
 ## Instalación
 
-1. Clona el repositorio: `git clone https://github.com/Jacobo0312/test_back_developer`
+1. Clona el repositorio: `git clone https://github.com/Jacobo0312/fastapi_template`
 2. Ve al directorio del proyecto: `cd test_back_developer`
 3. Crea un entorno virtual (opcional pero se recomienda): `virtualenv venv`
 4. Activa el entorno virtual:
